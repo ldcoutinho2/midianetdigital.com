@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finalizar pedido — MidiaNet Growth</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="checkout-page">
+<header class="top checkout-top">
+  <a class="logo" href="index.html">🚀 MIDIANET <b>GROWTH</b></a>
+</header>
+
+<main class="checkout-wrap">
+  <a class="back-link" href="javascript:history.back()">← Voltar aos planos</a>
+
+  <div class="checkout-title">
+    <span class="checkout-kicker">🚀 PACOTE DE ENGAJAMENTO SELECIONADO</span>
+    <h1>Seu pedido está quase pronto!</h1>
+    <p>Confira seu pacote abaixo e informe os dados para finalizar.</p>
+  </div>
+
+  <section class="selected-plan" id="summary"></section>
+
+  <div class="checkout-trust">
+    <div><b>🔒 Compra segura</b><span>Seus dados protegidos</span></div>
+    <div><b>⚡ Início rápido</b><span>Após a confirmação</span></div>
+    <div><b>💬 Atendimento</b><span>Suporte pelo WhatsApp</span></div>
+  </div>
+
+  <section class="checkout-form-card">
+    <div class="form-heading">
+      <span>02</span>
+      <div><h2>Agora só falta você</h2><p>Informe os dados do perfil. Não pedimos sua senha.</p></div>
+    </div>
+    <form id="form" class="checkout-form">
+      <label>Seu nome
+        <input id="nome" required placeholder="Como podemos chamar você?" autocomplete="name">
+      </label>
+      <label>Instagram — @ ou link do perfil
+        <input id="instagram" required placeholder="@seuperfil ou https://instagram.com/..." autocomplete="url">
+      </label>
+      <label>Forma de pagamento
+        <select id="pagamento" required>
+          <option value="">Escolha uma opção</option>
+          <option value="Pix">💠 Pix</option>
+          <option value="Cartão">💳 Cartão</option>
+        </select>
+      </label>
+      <button class="checkout-submit" type="submit">
+        <span>FINALIZAR PEDIDO NO WHATSAPP</span><strong>→</strong>
+      </button>
+      <p class="checkout-note">Você será direcionado ao WhatsApp com todos os dados do pedido preenchidos.</p>
+    </form>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
