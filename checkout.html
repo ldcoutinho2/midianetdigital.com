@@ -260,9 +260,11 @@
           </div>
 
           <div class="field-msg" id="msg-instagram"></div>
+          <div id="profile-flow-note" style="display:none;margin-top:.45rem;font-size:.72rem;color:var(--muted);line-height:1.45;">🔎 Primeiro vamos verificar seu perfil. Depois carregaremos suas publicações para você escolher onde aplicar o serviço.</div>
         </div>
 
         <input type="hidden" id="link_final_instagram"/>
+        <input type="hidden" id="perfil_confirmado_url"/>
 
         <div id="perfil-verificado" style="display:none;margin-top:.9rem;background:rgba(232,255,71,.06);border:1px solid rgba(232,255,71,.22);border-radius:14px;padding:1rem;">
           <div style="display:flex;align-items:center;gap:.8rem;">
@@ -279,7 +281,8 @@
                 type="button"
                 id="btn-confirmar-perfil"
                 onclick="confirmarPerfilInstagram()"
-                style="margin-top:.9rem;width:100%;border:none;border-radius:999px;background:var(--ac);color:#080810;font-weight:800;padding:.75rem;cursor:pointer;"
+                data-confirm-button="1"
+                style="display:none;margin-top:.9rem;width:100%;border:none;border-radius:999px;background:var(--ac);color:#080810;font-weight:800;padding:.75rem;cursor:pointer;"
               >
                 Confirmar perfil
               </button>
@@ -288,7 +291,7 @@
 
           <div id="posts-instagram" style="display:none;margin-top:1rem;">
             <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.7rem;">
-              Escolha a publicação
+              Escolha as publicações
             </div>
 
             <div id="info-publicacoes" style="margin-bottom:.7rem;font-size:.78rem;color:var(--ac);font-weight:700;line-height:1.5;"></div>
@@ -320,19 +323,7 @@
 
         </div>
 
-        <div class="bump-box" id="bumpBox" onclick="toggleBump()">
-          <div class="bump-row">
-            <div class="bump-check" id="bumpCheck"></div>
-            <div class="bump-text">
-              <div class="bump-title">Adicionar 500 curtidas brasileiras <span class="bump-tag">Oferta única</span></div>
-              <div class="bump-desc">Aproveite e turbine o engajamento de até 2 publicações suas (250 curtidas em cada).</div>
-              <div class="bump-price"><span class="old">R$ 9,90</span><span class="new" id="bumpPriceText">+ R$ 4,90</span></div>
-            </div>
-          </div>
-        </div>
-        <div id="bumpPublicacaoAviso" style="display:none;margin-top:-1rem;margin-bottom:1.1rem;font-size:.72rem;color:var(--ac);text-align:center;">
-          👇 Selecione abaixo em qual publicação aplicar as 500 curtidas do bump (após confirmar o perfil)
-        </div>
+        
 
         <div style="margin-bottom:1.1rem">
           <div class="pay-label">Forma de pagamento</div>
@@ -489,9 +480,6 @@
         "5000": {seguidores:5000, likes:4000, views:4000}
       }
     };
-    var isCombo = !!COMBO_INFO[servico];
-    var comboInfo = isCombo ? (COMBO_INFO[servico][plano] || null) : null;
-
     Object.keys(COMBO_INFO).forEach(function(svc){ Object.keys(COMBO_INFO[svc]).forEach(function(q){ PRECOS[svc+"__"+q] = {"engajamento-30-70": {500:5,1000:13.99,1500:20.99,2000:27.99,3000:41.99,4000:55.99,5000:69.99},"engajamento-60-40": {500:8.99,1000:17.99,2000:35.98,3000:53.97,4000:71.96,5000:89.95},"engajamento-br": {250:15,500:25,1000:45,2000:65,3000:85,4000:110,5000:125},"engajamento-premium": {500:80,1000:160,2000:320,3000:497,4000:657,5000:847}}[svc][q]; }); });
 
     var SL = {
@@ -506,7 +494,7 @@
       "salvamentos":"🔖","compartilhamentos":"📤"
     };
     var PL = {
-      "50":"50 un","100":"100 un","250":"250 un","500":"500 un","1000":"1.000 un",
+      "50":"50 un","100":"100 un","250":"250 un","500":"500 un","1000":"1.000 un","1500":"1.500 seguidores",
       "2000":"2.000 un","5000":"5.000 un","2500":"2.500 un","10000":"10.000 un",
       "25000":"25.000 un","10":"10 un","25":"25 un"
     };
@@ -518,6 +506,8 @@
     var p = new URLSearchParams(location.search);
     var servico = p.get("servico") || sessionStorage.getItem("servico") || "";
     var plano = p.get("plano") || sessionStorage.getItem("plano") || "";
+    var isCombo = !!COMBO_INFO[servico];
+    var comboInfo = isCombo ? (COMBO_INFO[servico][plano] || null) : null;
     var chave = servico + "__" + plano;
     var valorBase = PRECOS[chave] || 0;
 
@@ -573,10 +563,18 @@
 
     var isPublicacao = ["curtidas-brasileiras","visualizacoes","comentarios","salvamentos","compartilhamentos"].includes(servico);
     var exigeDistribuicaoCombo = isCombo && comboInfo && (comboInfo.likes > 0 || comboInfo.views > 0);
+    // Initialize combo summary on first load (not only after a bump toggle).
+    atualizarResumoCombo();
+    if (isCombo) {
+      var btnPerfilInicial = document.getElementById("btn-confirmar-perfil");
+      if (btnPerfilInicial) btnPerfilInicial.style.display = "none";
+    }
     if(isCombo){ document.getElementById("bumpBox").style.display = "none"; document.getElementById("bumpPublicacaoAviso").style.display = "none"; }
     if (isPublicacao) {
-      document.getElementById("label-instagram").textContent = "🔗 Link da publicação ou Reels";
-      document.getElementById("instagram").placeholder = "https://www.instagram.com/p/...";
+      var flowNote = document.getElementById("profile-flow-note");
+      if(flowNote) flowNote.style.display = "block";
+      document.getElementById("label-instagram").textContent = "📸 @ ou link do Instagram";
+      document.getElementById("instagram").placeholder = "@seuusuario ou https://www.instagram.com/seuusuario";
       if(servico === "curtidas-brasileiras"){
         document.getElementById("bumpBox").style.display = "none";
       }
@@ -594,8 +592,6 @@
       var bumpAviso = document.getElementById("bumpPublicacaoAviso");
 
       if(bumpAtivo && !isPublicacao){
-        // Serviço principal não exige publicação, então quem define o limite é o bump (até 2 publicações de 250 cada)
-        maxPublicacoes = 2;
         if(bumpAviso) bumpAviso.style.display = "block";
         // Se o perfil já foi confirmado antes de ativar o bump, força a aparição do seletor de posts agora
         if(perfilVisivel){
@@ -648,7 +644,7 @@
       return true;
     });
     validateField("instagram","msg-instagram", function(v){
-      if(!v) return "Informe o " + (isPublicacao ? "link da publicação." : "@ do perfil.");
+      if(!v) return "Informe o @ ou link do seu perfil do Instagram.";
       return true;
     });
 
@@ -656,11 +652,12 @@
       var nome = document.getElementById("nome").value.trim();
       var tel = document.getElementById("telefone").value.replace(/\D/g,"");
       var igDigitado = document.getElementById("instagram").value.trim();
-      var ig = document.getElementById("link_final_instagram").value || igDigitado;
+      var perfilConfirmadoUrl = document.getElementById("perfil_confirmado_url").value || "";
+      var ig = document.getElementById("link_final_instagram").value || perfilConfirmadoUrl || igDigitado;
       if(!nome || nome.length < 3){ showErr("nome","msg-nome","Informe seu nome."); return false; }
       if(tel.length < 10){ showErr("telefone","msg-telefone","WhatsApp inválido."); return false; }
       if(!ig){ showErr("instagram","msg-instagram","Campo obrigatório."); return false; }
-      if(!isPublicacao && !isCombo && !instagramConfirmado){ alert("Verifique e confirme seu perfil do Instagram antes de continuar."); return false; }
+      if(!instagramConfirmado){ alert("Verifique e confirme seu perfil do Instagram antes de continuar."); return false; }
       if(isCombo && exigeDistribuicaoCombo && !instagramConfirmado){ alert("Verifique seu perfil antes de continuar."); return false; }
       return true;
     }
@@ -675,37 +672,28 @@
     }
 
     var instagramConfirmado = false;
-    var linksSelecionados = []; // publicações do SERVIÇO PRINCIPAL (curtidas/views/comentários)
-    var linksBump = [];         // publicações do ORDER BUMP (500 curtidas extras) — nunca se mistura com linksSelecionados
-    var maxPublicacoes = 1;
 
-    if(isCombo && comboInfo && (comboInfo.likes || comboInfo.views)){
-      var maiorBonus = Math.max(comboInfo.likes || 0, comboInfo.views || 0);
-      maxPublicacoes = maiorBonus <= 500 ? 2 : (maiorBonus <= 700 ? 3 : 5);
-    } else if(servico === "visualizacoes" || servico === "curtidas-brasileiras"){
-      if(plano === "500") maxPublicacoes = 2;
-      else maxPublicacoes = 5;
-    } else if(bumpAtivo){
-      // O serviço principal não exige publicação (ex: seguidores), mas o order bump
-      // de 500 curtidas exige até 2 publicações (250 curtidas em cada).
-      maxPublicacoes = 2;
+    var linksSelecionados = [];
+    // Não existe limite fixo de publicações. A única restrição é matemática:
+    // cada publicação precisa receber pelo menos 150 de cada componente contratado.
+    function maxPublicacoesPorMinimo(qtd){
+      qtd = Number(qtd || 0);
+      return qtd > 0 ? Math.floor(qtd / 150) : 0;
     }
 
-    (function(){
-      var info = document.getElementById("info-publicacoes");
+    function atualizarInfoPublicacoes(){
+      var info=document.getElementById("info-publicacoes");
       if(!info) return;
-      if(isCombo && comboInfo && (comboInfo.likes || comboInfo.views)){
-        var parts=[]; if(comboInfo.likes) parts.push(comboInfo.likes.toLocaleString("pt-BR")+" curtidas"); if(comboInfo.views) parts.push(comboInfo.views.toLocaleString("pt-BR")+" visualizações");
-        info.innerHTML = parts.join(" + ") + " → distribua em até " + maxPublicacoes + " publicações";
-      } else if(plano === "500") info.innerHTML = "500 visualizações/curtidas → até 2 publicações (250 em cada)";
-      else if(plano === "1000") info.innerHTML = "1.000 visualizações/curtidas → até 5 publicações (200 em cada)";
-      else if(plano === "2500") info.innerHTML = "2.500 visualizações/curtidas → até 5 publicações (500 em cada)";
-      else if(plano === "5000") info.innerHTML = "5.000 visualizações/curtidas → até 5 publicações (1.000 em cada)";
-      else if(plano === "10000") info.innerHTML = "10.000 visualizações/curtidas → até 5 publicações (2.000 em cada)";
-      else if(plano === "20000") info.innerHTML = "20.000 visualizações/curtidas → até 5 publicações (4.000 em cada)";
-    })();
+      var qtd=isCombo && comboInfo ? Math.max(comboInfo.likes||0, comboInfo.views||0) : Number(plano||0);
+      if(qtd>0){
+        var max=maxPublicacoesPorMinimo(qtd);
+        info.innerHTML="📸 Adicione quantas publicações quiser. O sistema distribui automaticamente o pacote entre elas. Cada publicação precisa receber no mínimo <strong>150</strong>.";
+      }
+    }
 
-    function limparUsuarioInstagram(valor){
+    atualizarInfoPublicacoes();
+
+function limparUsuarioInstagram(valor){
       return valor
         .trim()
         .replace("https://www.instagram.com/", "")
@@ -725,19 +713,48 @@
         return;
       }
 
+      // New verification attempt: nothing from the previous profile remains confirmed.
+      instagramConfirmado = false;
+      linksSelecionados = [];
+      distribuicaoCombo = [];
+
+      var oldDist = document.getElementById("combo-distribuicao");
+      if(oldDist) oldDist.remove();
+
+      var postsArea = document.getElementById("posts-instagram");
+      var postsGrid = document.getElementById("posts-grid");
+      if(postsArea) postsArea.style.display = "none";
+      if(postsGrid) postsGrid.innerHTML = "";
+
+      var btnConfirm = document.getElementById("btn-confirmar-perfil");
+      if(btnConfirm && (isCombo || isPublicacao)) btnConfirm.style.display = "none";
+
+      var perfilCard = document.getElementById("perfil-verificado");
+      if(perfilCard) perfilCard.style.display = "none";
+
       document.getElementById("msg-instagram").textContent = "🔎 Buscando perfil...";
       document.getElementById("msg-instagram").className = "field-msg show ok";
 
       try{
-        var r = await fetch(BACKEND + "/instagram/perfil?user=" + encodeURIComponent(user));
+        var controller = new AbortController();
+        var timeout = setTimeout(function(){ controller.abort(); }, 25000);
+
+        var r = await fetch(
+          BACKEND + "/instagram/perfil?user=" + encodeURIComponent(user) + "&_=" + Date.now(),
+          { cache: "no-store", signal: controller.signal }
+        );
+        clearTimeout(timeout);
+
         var d = await r.json();
 
         if(!r.ok || !d.success){
-          throw new Error(d.error || "Perfil não encontrado.");
+          throw new Error(d.error || ("HTTP " + r.status));
         }
 
         var imgPerfil = document.getElementById("perfil-foto");
-        imgPerfil.src = d.foto ? BACKEND + "/proxy-img?url=" + encodeURIComponent(d.foto) : "https://ui-avatars.com/api/?name=" + encodeURIComponent(d.username) + "&background=e8ff47&color=080810";
+        imgPerfil.src = d.foto
+          ? BACKEND + "/proxy-img?url=" + encodeURIComponent(d.foto)
+          : "https://ui-avatars.com/api/?name=" + encodeURIComponent(d.username) + "&background=e8ff47&color=080810";
         imgPerfil.onerror = function(){
           this.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(d.username) + "&background=e8ff47&color=080810";
         };
@@ -752,33 +769,29 @@
         document.getElementById("perfil-link").href = d.link;
         document.getElementById("perfil-link").textContent = "Ver perfil ↗";
         document.getElementById("perfil-verificado").style.display = "block";
+        document.getElementById("perfil_confirmado_url").value = d.link;
 
-        var btnPerfil = document.getElementById("btn-confirmar-perfil");
-        if(btnPerfil){
-          btnPerfil.style.display = (isPublicacao || isCombo) ? "none" : "block";
-        }
-        if(isCombo){
-          instagramConfirmado = true;
-          campo.readOnly = true;
-          campo.style.opacity = "0.75";
-        }
-
-        document.getElementById("link_final_instagram").value = d.link;
-
-        if(isPublicacao || isCombo){
+        if(isCombo || isPublicacao){
           document.getElementById("msg-instagram").textContent = "✅ Perfil encontrado. Buscando publicações...";
-          carregarPostsInstagram(d.username, false);
+          document.getElementById("msg-instagram").className = "field-msg show ok";
+          await carregarPostsInstagram(d.username, false);
         } else if(bumpAtivo){
-          // Serviço principal não exige publicação, mas o order bump de curtidas exige.
-          // Mostra o seletor de posts também, sem esconder o botão "Confirmar perfil"
-          // e SEM tocar no link_final_instagram (que continua sendo o perfil principal).
-          document.getElementById("msg-instagram").textContent = "✅ Perfil encontrado. Selecione abaixo a publicação para o bump de curtidas.";
-          carregarPostsInstagram(d.username, true);
+          document.getElementById("msg-instagram").textContent = "✅ Perfil encontrado. Buscando publicações...";
+          document.getElementById("msg-instagram").className = "field-msg show ok";
+          await carregarPostsInstagram(d.username, true);
+        } else {
+          // Services without post selection can confirm immediately.
+          if(btnConfirm) btnConfirm.style.display = "block";
+          document.getElementById("msg-instagram").textContent = "✅ Perfil encontrado. Confirme o perfil para continuar.";
+          document.getElementById("msg-instagram").className = "field-msg show ok";
         }
 
-        document.getElementById("msg-instagram").textContent = isPublicacao ? "" : document.getElementById("msg-instagram").textContent;
       } catch(e){
-        document.getElementById("msg-instagram").textContent = "Não foi possível verificar. Confira o @ ou use o link manualmente.";
+        var msg = e && e.name === "AbortError"
+          ? "⏱️ A verificação demorou demais. Tente novamente."
+          : "❌ Não foi possível verificar o perfil. " + (e && e.message ? e.message : "Tente novamente.");
+
+        document.getElementById("msg-instagram").textContent = msg;
         document.getElementById("msg-instagram").className = "field-msg show err";
       }
     }
@@ -787,6 +800,8 @@
       instagramConfirmado = true;
 
       var campo = document.getElementById("instagram");
+      var perfilUrl = document.getElementById("perfil-link")?.href || document.getElementById("perfil_confirmado_url")?.value || "";
+      if(perfilUrl) document.getElementById("perfil_confirmado_url").value = perfilUrl;
       campo.readOnly = true;
       campo.style.opacity = "0.75";
 
@@ -795,52 +810,203 @@
 
       var btn = document.querySelector("#perfil-verificado button");
       if(btn){
-        btn.textContent = "✅ Perfil confirmado";
+        btn.textContent = "✅ PERFIL CONFIRMADO";
         btn.style.background = "#34d399";
+        btn.disabled = true;
+        btn.style.cursor = "default";
       }
     }
 
     var distribuicaoCombo = [];
+
+    // Distribuição do combo: sempre automática, recalculada a cada seleção.
+    // Regra: todas as curtidas/visualizações do pacote são usadas e cada publicação
+    // recebe no mínimo 150 quando o componente correspondente existe.
+    function totalDist(tipo){
+      return distribuicaoCombo.reduce(function(total, item){
+        return total + Number(item[tipo] || 0);
+      }, 0);
+    }
+
+    function calcularDistribuicao(total, quantidadePublicacoes){
+      total = Number(total || 0);
+      quantidadePublicacoes = Number(quantidadePublicacoes || 0);
+      if(!total || !quantidadePublicacoes) return [];
+      if(total < quantidadePublicacoes * 150) return null;
+
+      var base = Math.floor(total / quantidadePublicacoes);
+      var resto = total % quantidadePublicacoes;
+      var valores = [];
+      for(var i=0;i<quantidadePublicacoes;i++){
+        valores.push(base + (i < resto ? 1 : 0));
+      }
+      return valores;
+    }
+
+    function atualizarInfoPublicacoes(){
+      var info=document.getElementById("info-publicacoes");
+      if(!info) return;
+      if(isCombo && comboInfo && (comboInfo.likes || comboInfo.views)){
+        var partes=[];
+        if(comboInfo.likes) partes.push("❤️ " + Number(comboInfo.likes).toLocaleString("pt-BR") + " curtidas");
+        if(comboInfo.views) partes.push("👁️ " + Number(comboInfo.views).toLocaleString("pt-BR") + " visualizações");
+        info.innerHTML="📸 Escolha quantas publicações quiser. O sistema divide automaticamente " + partes.join(" + ") + ". Mínimo de <strong>150</strong> por publicação em cada serviço contratado.";
+      }
+    }
+    atualizarInfoPublicacoes();
+
+    function limparUsuarioInstagram(valor){
+      return valor.trim()
+        .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+        .replace(/^@/, "")
+        .split("/")[0]
+        .split("?")[0]
+        .trim();
+    }
+
     function renderDistribuicaoCombo(){
       if(!isCombo || !comboInfo) return;
-      var old=document.getElementById("combo-distribuicao"); if(old) old.remove();
+
+      var old=document.getElementById("combo-distribuicao");
+      if(old) old.remove();
+
       if(!(comboInfo.likes || comboInfo.views) || !linksSelecionados.length) return;
+
+      // Mantém somente as publicações atualmente selecionadas.
+      var anteriores = {};
+      distribuicaoCombo.forEach(function(item){ anteriores[item.link] = item; });
+      distribuicaoCombo = linksSelecionados.map(function(link){
+        return anteriores[link] || {link:link, curtidas:0, visualizacoes:0};
+      });
+
+      var distLikes = calcularDistribuicao(comboInfo.likes, distribuicaoCombo.length);
+      var distViews = calcularDistribuicao(comboInfo.views, distribuicaoCombo.length);
+      var impossivelLikes = comboInfo.likes > 0 && !distLikes;
+      var impossivelViews = comboInfo.views > 0 && !distViews;
+
+      // Ao adicionar/remover publicação, a regra é sempre recalcular do zero.
+      // Isso elimina o estado antigo que estava deixando os campos em 0.
+      distribuicaoCombo.forEach(function(item,i){
+        item.curtidas = distLikes ? distLikes[i] : 0;
+        item.visualizacoes = distViews ? distViews[i] : 0;
+      });
+
       var area=document.getElementById("posts-grid");
-      var box=document.createElement("div"); box.id="combo-distribuicao"; box.className="dist-box";
-      box.innerHTML='<div class="dist-title">📊 Distribua seu engajamento</div><div class="dist-help">Defina quanto cada publicação recebe. O total precisa bater exatamente com o pacote.</div>';
+      if(!area) return;
+
+      var box=document.createElement("div");
+      box.id="combo-distribuicao";
+      box.className="dist-box";
+      box.innerHTML='<div class="dist-title">📊 Distribuição automática</div>'+
+        '<div class="dist-help">O sistema divide automaticamente o pacote entre as publicações escolhidas. Você pode alterar uma quantidade; o restante será redistribuído. Cada publicação deve receber no mínimo 150.</div>';
+
+      if(impossivelLikes || impossivelViews){
+        var avis=document.createElement("div");
+        avis.style.cssText='margin-bottom:.7rem;padding:.7rem;border:1px solid rgba(245,158,11,.35);border-radius:10px;color:#fbbf24;font-size:.76rem;font-weight:700;line-height:1.45;';
+        var problemas=[];
+        if(impossivelLikes) problemas.push("curtidas");
+        if(impossivelViews) problemas.push("visualizações");
+        avis.textContent="⚠️ Muitas publicações para o pacote de " + problemas.join(" e ") + ". Reduza a quantidade de publicações para que cada uma receba pelo menos 150.";
+        box.appendChild(avis);
+      }
+
       linksSelecionados.forEach(function(link,i){
-        var src=''; var thumb='';
-        var el=[].slice.call(document.querySelectorAll('#posts-grid > div')).find(function(x){ return x.getAttribute('data-url')===link; });
-        if(el){ var im=el.querySelector('img'); if(im) thumb=im.src; }
-        var item=distribuicaoCombo.find(function(x){return x.link===link;}) || {link:link,curtidas:0,visualizacoes:0};
-        distribuicaoCombo=distribuicaoCombo.filter(function(x){return x.link!==link;}); distribuicaoCombo.push(item);
-        var row=document.createElement('div'); row.className='post-row'; row.innerHTML='<img class="post-thumb" src="'+(thumb||'')+'"><div><div class="post-meta">Publicação '+(i+1)+'</div><div class="dist-inputs">'+(comboInfo.likes?'<label>❤️ Curtidas<input type="number" min="0" max="'+comboInfo.likes+'" value="'+item.curtidas+'" data-type="curtidas" data-link="'+encodeURIComponent(link)+'"></label>':'<div></div>')+(comboInfo.views?'<label>👁️ Visualizações<input type="number" min="0" max="'+comboInfo.views+'" value="'+item.visualizacoes+'" data-type="visualizacoes" data-link="'+encodeURIComponent(link)+'"></label>':'')+'</div></div>';
+        var thumb="";
+        var cards=[].slice.call(document.querySelectorAll('#posts-grid > div'));
+        var card=cards.find(function(x){ return x.getAttribute('data-url')===link; });
+        if(card){ var img=card.querySelector('img'); if(img) thumb=img.src; }
+        var item=distribuicaoCombo[i];
+        var row=document.createElement("div");
+        row.className="post-row";
+        row.innerHTML='<img class="post-thumb" src="'+(thumb||'')+'" alt="">'+
+          '<div><div class="post-meta">Publicação '+(i+1)+'</div><div class="dist-inputs">'+
+          (comboInfo.likes ? '<label>❤️ Curtidas<input type="number" min="150" max="'+comboInfo.likes+'" value="'+item.curtidas+'" data-type="curtidas" data-index="'+i+'"></label>' : '<div></div>')+
+          (comboInfo.views ? '<label>👁️ Visualizações<input type="number" min="150" max="'+comboInfo.views+'" value="'+item.visualizacoes+'" data-type="visualizacoes" data-index="'+i+'"></label>' : '')+
+          '</div></div>';
         box.appendChild(row);
       });
-      var total=document.createElement('div'); total.className='dist-total'; total.id='dist-total'; box.appendChild(total);
-      area.insertAdjacentElement('afterend',box);
-      // Preenche automaticamente uma divisão equilibrada; o cliente pode ajustar depois.
-      var n=linksSelecionados.length;
-      if(n>0){
-        var ql=Math.floor(Number(comboInfo.likes||0)/n), rl=Number(comboInfo.likes||0)-ql*n;
-        var qv=Math.floor(Number(comboInfo.views||0)/n), rv=Number(comboInfo.views||0)-qv*n;
-        distribuicaoCombo.forEach(function(x,i){ x.curtidas=ql+(i<rl?1:0); x.visualizacoes=qv+(i<rv?1:0); });
-        box.querySelectorAll('input').forEach(function(inp){ var link=decodeURIComponent(inp.dataset.link); var item=distribuicaoCombo.find(function(x){return x.link===link;}); if(item) inp.value=Number(item[inp.dataset.type]||0); });
-      }
-      box.querySelectorAll('input').forEach(function(inp){inp.addEventListener('input',function(){var link=decodeURIComponent(this.dataset.link);var item=distribuicaoCombo.find(function(x){return x.link===link;});if(item)item[this.dataset.type]=Math.max(0,Number(this.value||0));atualizarDistribuicaoTotal();});});
+
+      var total=document.createElement("div");
+      total.className="dist-total";
+      total.id="dist-total";
+      box.appendChild(total);
+      area.insertAdjacentElement("afterend",box);
+
+      box.querySelectorAll("input[data-type]").forEach(function(input){
+        input.addEventListener("change", function(){
+          ajustarDistribuicaoManual(this.dataset.type, Number(this.dataset.index), Number(this.value || 0));
+        });
+        input.addEventListener("blur", function(){
+          ajustarDistribuicaoManual(this.dataset.type, Number(this.dataset.index), Number(this.value || 0));
+        });
+      });
+
       atualizarDistribuicaoTotal();
     }
+
+    function ajustarDistribuicaoManual(tipo, indice, valor){
+      if(!comboInfo || !distribuicaoCombo[indice]) return;
+      var total=Number(comboInfo[tipo] || 0);
+      var n=distribuicaoCombo.length;
+      if(!total || !n) return;
+
+      if(total < n * 150){
+        renderDistribuicaoCombo();
+        return;
+      }
+
+      var maxPermitido=total - 150*(n-1);
+      var novo=Math.max(150, Math.min(maxPermitido, Math.round(Number(valor || 0))));
+      distribuicaoCombo[indice][tipo]=novo;
+
+      var restante=total-novo;
+      var outros=[];
+      for(var i=0;i<n;i++) if(i!==indice) outros.push(i);
+      var base=Math.floor(restante/outros.length);
+      var resto=restante%outros.length;
+      outros.forEach(function(idx,j){
+        distribuicaoCombo[idx][tipo]=base+(j<resto?1:0);
+      });
+
+      var box=document.getElementById("combo-distribuicao");
+      if(box){
+        box.querySelectorAll('input[data-type]').forEach(function(inp){
+          var idx=Number(inp.dataset.index);
+          var t=inp.dataset.type;
+          inp.value=Number(distribuicaoCombo[idx]?.[t] || 0);
+        });
+      }
+      atualizarDistribuicaoTotal();
+    }
+
     function atualizarDistribuicaoTotal(){
-      var el=document.getElementById('dist-total'); if(!el) return;
-      var tl=distribuicaoCombo.reduce(function(a,x){return a+Number(x.curtidas||0)},0), tv=distribuicaoCombo.reduce(function(a,x){return a+Number(x.visualizacoes||0)},0);
-      var ok=tl===(comboInfo?.likes||0) && tv===(comboInfo?.views||0);
-      el.innerHTML='❤️ '+tl.toLocaleString('pt-BR')+' / '+(comboInfo?.likes||0).toLocaleString('pt-BR')+' &nbsp; · &nbsp; 👁️ '+tv.toLocaleString('pt-BR')+' / '+(comboInfo?.views||0).toLocaleString('pt-BR')+' '+(ok?'✅':'⚠️');
+      var el=document.getElementById("dist-total");
+      if(!el || !comboInfo) return;
+      var tl=totalDist("curtidas");
+      var tv=totalDist("visualizacoes");
+      var likesOk=tl===Number(comboInfo.likes||0);
+      var viewsOk=tv===Number(comboInfo.views||0);
+      var minOk=distribuicaoCombo.length>0 && distribuicaoCombo.every(function(x){
+        return (!comboInfo.likes || Number(x.curtidas||0)>=150) &&
+               (!comboInfo.views || Number(x.visualizacoes||0)>=150);
+      });
+      var ok=likesOk && viewsOk && minOk;
+      el.innerHTML='❤️ '+tl.toLocaleString('pt-BR')+' / '+Number(comboInfo.likes||0).toLocaleString('pt-BR')+
+        ' &nbsp; · &nbsp; 👁️ '+tv.toLocaleString('pt-BR')+' / '+Number(comboInfo.views||0).toLocaleString('pt-BR')+
+        ' '+(ok?'✅':'⚠️');
       el.style.borderColor=ok?'rgba(52,211,153,.35)':'rgba(245,158,11,.25)';
     }
+
     function distribuicaoValida(){
       if(!isCombo || !comboInfo || !(comboInfo.likes || comboInfo.views)) return true;
-      var tl=distribuicaoCombo.reduce(function(a,x){return a+Number(x.curtidas||0)},0), tv=distribuicaoCombo.reduce(function(a,x){return a+Number(x.visualizacoes||0)},0);
-      return tl===Number(comboInfo.likes||0) && tv===Number(comboInfo.views||0) && linksSelecionados.length>0;
+      if(!linksSelecionados.length || distribuicaoCombo.length!==linksSelecionados.length) return false;
+      var tl=totalDist("curtidas");
+      var tv=totalDist("visualizacoes");
+      var minOk=distribuicaoCombo.every(function(x){
+        return (!comboInfo.likes || Number(x.curtidas||0)>=150) &&
+               (!comboInfo.views || Number(x.visualizacoes||0)>=150);
+      });
+      return tl===Number(comboInfo.likes||0) && tv===Number(comboInfo.views||0) && minOk;
     }
 
     async function carregarPostsInstagram(user, paraBump){
@@ -851,7 +1017,10 @@
       grid.innerHTML = "<div style='color:var(--ac);font-size:.85rem;font-weight:700;'>⏳ Buscando publicações...</div>";
 
       try{
-        var r = await fetch(BACKEND + "/instagram/posts?user=" + encodeURIComponent(user));
+        var r = await fetch(
+          BACKEND + "/instagram/posts?user=" + encodeURIComponent(user) + "&_=" + Date.now(),
+          { cache: "no-store" }
+        );
         var d = await r.json();
 
         // O filtro de vídeo só se aplica ao fluxo do serviço principal de visualizações.
@@ -865,6 +1034,19 @@
         if(!r.ok || !d.success || !d.posts.length){
           throw new Error("Sem publicações.");
         }
+
+        // The profile is NOT confirmed yet. The customer confirms it only
+        // after seeing that the profile and its publications were loaded.
+        var btnConfirm = document.getElementById("btn-confirmar-perfil");
+        if(btnConfirm && (isCombo || isPublicacao)) {
+          btnConfirm.style.display = "block";
+          btnConfirm.textContent = "✅ CONFIRMAR ESTE PERFIL";
+        }
+
+        document.getElementById("msg-instagram").textContent =
+          "✅ Perfil encontrado e publicações carregadas. Confirme o perfil para continuar.";
+        document.getElementById("msg-instagram").className = "field-msg show ok";
+
 
         grid.style.display = "flex";
         grid.style.overflowX = "auto";
@@ -939,7 +1121,11 @@
         document.getElementById("msg-instagram").className = "field-msg show ok";
 
       } catch(e){
-        grid.innerHTML = "<div style='color:var(--muted);font-size:.85rem;'>Não foi possível carregar publicações. Tente outro perfil.</div>";
+        console.error("[MidiaNet] erro ao carregar publicações:", e);
+        grid.innerHTML = "<div style='color:#ff7b7b;font-size:.85rem;font-weight:700;'>⚠️ Perfil encontrado, mas as publicações não carregaram. Tente novamente.</div>";
+        document.getElementById("msg-instagram").textContent =
+          "⚠️ Perfil encontrado. Falha ao buscar publicações. Verifique o servidor /instagram/posts.";
+        document.getElementById("msg-instagram").className = "field-msg show err";
       }
     }
 
@@ -956,11 +1142,6 @@
       // baseado em qual fluxo está ativo no momento (mesma regra usada no grid de posts).
       var ehParaBump = bumpAtivo && !isPublicacao;
       var lista = ehParaBump ? linksBump : linksSelecionados;
-
-      if(lista.length >= maxPublicacoes){
-        alert("Você já selecionou o máximo de publicações deste plano.");
-        return;
-      }
 
       if(lista.includes(url)){
         alert("Esse link já foi adicionado.");
@@ -984,7 +1165,7 @@
       }
 
       document.getElementById("msg-instagram").textContent =
-        "Selecionadas: " + lista.length + "/" + maxPublicacoes + " publicações" + (ehParaBump ? " (bump)" : "");
+        "Selecionadas: " + lista.length + " publicações" + (ehParaBump ? " (bump)" : "");
       document.getElementById("msg-instagram").className = "field-msg show ok";
     }
 
@@ -996,17 +1177,6 @@
         lista.splice(index, 1);
         el.style.borderColor = "transparent";
       } else {
-        if(lista.length >= maxPublicacoes){
-          alert(
-            "Limite atingido.\n\n" +
-            (paraBump
-              ? "O bump de 500 curtidas permite até " + maxPublicacoes + " publicações."
-              : "Plano de " + plano + " permite até " + maxPublicacoes + " publicações.") +
-            "\n\nDesmarque uma publicação para selecionar outra."
-          );
-          return;
-        }
-
         lista.push(url);
         el.style.borderColor = "#e8ff47";
       }
@@ -1023,9 +1193,12 @@
         btnPub.style.display = lista.length > 0 ? "block" : "none";
       }
 
-      if(!paraBump && isCombo) renderDistribuicaoCombo();
+      if(!paraBump && isCombo){
+        distribuicaoCombo = distribuicaoCombo.filter(function(x){return linksSelecionados.includes(x.link);});
+        renderDistribuicaoCombo();
+      }
       document.getElementById("msg-instagram").textContent =
-        "Selecionadas: " + lista.length + "/" + maxPublicacoes + " publicações" + (paraBump ? " (bump)" : "");
+        "Selecionadas: " + lista.length + " publicações" + (paraBump ? " (bump)" : "");
       document.getElementById("msg-instagram").className = "field-msg show ok";
     }
 
@@ -1054,7 +1227,10 @@
       var nome = document.getElementById("nome").value.trim();
       var telefone = document.getElementById("telefone").value.trim();
       var igDigitado = document.getElementById("instagram").value.trim();
-      var ig = document.getElementById("link_final_instagram").value || igDigitado;
+      var perfilConfirmadoUrl = document.getElementById("perfil_confirmado_url").value || "";
+      // O destino principal do pedido é sempre o perfil confirmado.
+      // Para curtidas/visualizações, o campo ig é substituído abaixo pelos links das publicações selecionadas.
+      var ig = perfilConfirmadoUrl || igDigitado;
       if(!servico || !plano){ alert("Volte e selecione serviço e plano."); return; }
 
       var bumpPublicacao = null;
@@ -1097,11 +1273,39 @@
 
       var total = valorTotal();
 
+      function obterRastreamentoMeta(){
+        var cookies = {};
+        document.cookie.split(';').forEach(function(parte){
+          var p = parte.trim();
+          if(!p) return;
+          var idx = p.indexOf('=');
+          if(idx < 0) return;
+          cookies[p.slice(0,idx)] = decodeURIComponent(p.slice(idx+1));
+        });
+
+        var paramsMeta = new URLSearchParams(window.location.search);
+        var fbclid = paramsMeta.get('fbclid') || sessionStorage.getItem('fbclid') || '';
+        var fbp = cookies['_fbp'] || sessionStorage.getItem('_fbp') || '';
+        var fbc = cookies['_fbc'] || sessionStorage.getItem('_fbc') || '';
+
+        if(fbclid && !fbc){
+          fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+        }
+
+        if(fbp) sessionStorage.setItem('_fbp', fbp);
+        if(fbc) sessionStorage.setItem('_fbc', fbc);
+        if(fbclid) sessionStorage.setItem('fbclid', fbclid);
+
+        return {fbp:fbp || null, fbc:fbc || null, fbclid:fbclid || null};
+      }
+
+      var metaTracking = obterRastreamentoMeta();
+
       try {
         var r = await fetch(BACKEND + "/criar-pedido", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({nome,telefone,instagram:ig,servico,plano,pagamento:"pix",valor:total,bump:isCombo?false:bumpAtivo,bump_publicacao:isCombo?null:bumpPublicacao,distribuicao:distribuicao})
+          body:JSON.stringify({nome,telefone,instagram:ig,servico,plano,pagamento:"pix",valor:total,bump:isCombo?false:bumpAtivo,bump_publicacao:isCombo?null:bumpPublicacao,distribuicao:distribuicao,meta:metaTracking})
         });
         var d = await r.json();
         if(!r.ok || !d.success) throw new Error(d.error || "Erro ao gerar pagamento");
@@ -1176,7 +1380,14 @@
           var msgSucesso="Ola! Quero acompanhar meu pedido.\n\nPedido: "+(dadosPedido.pedidoId||pedidoId)+"\nNome: "+(dadosPedido.nome||"")+"\nWhatsApp: "+(dadosPedido.telefone||"")+"\nInstagram: "+(dadosPedido.instagram||sessionStorage.getItem("instagram")||"")+"\nPacote: "+(dadosPedido.servico||servico)+" "+(dadosPedido.plano||plano)+"\nValor pago: R$ "+Number((dadosPedido.valor||valorTotal())/100).toFixed(2).replace(".",",")+"\nStatus: Pagamento confirmado\n\nQuero acompanhar o andamento do meu pedido.";
           document.getElementById("btnWaSucesso").href="https://wa.me/"+WHATSAPP_NUMERO+"?text="+encodeURIComponent(msgSucesso);
           if(typeof fbq === "function"){
-            fbq("track","Purchase",{value:valorTotal(),currency:"BRL"});
+            var purchaseValue = Number((dadosPedido.valor || valorTotal()*100) / 100);
+            var purchaseEventId = dadosPedido.metaEventId || ("purchase_" + (dadosPedido.pedidoId || pedidoId));
+            fbq("track","Purchase",{
+              value:purchaseValue,
+              currency:"BRL",
+              content_name:(dadosPedido.servico || servico) + " " + (dadosPedido.plano || plano),
+              content_type:"product"
+            },{eventID:purchaseEventId});
           }
         }
       } catch(e){}
